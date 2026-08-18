@@ -1,0 +1,40 @@
+{
+  "name": "etarcos-money-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^4.0.12",
+    "@ai-sdk/openai": "^4.0.11",
+    "ai": "^7.0.22",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
+    "firebase-admin": "^14.1.0",
+    "inngest": "^4.12.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.7.4",
+    "next": "16.2.10",
+    "next-swagger-doc": "^0.4.1",
+    "swagger-ui-react": "^5.32.8",
+    "web-push": "^3.6.7",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/swagger-ui-react": "^5.18.0",
+    "@types/web-push": "^3.6.4",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.5",
+    "typescript": "^5"
+  }
+}
