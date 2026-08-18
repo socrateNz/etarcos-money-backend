@@ -13,6 +13,6 @@ const google = createGoogleGenerativeAI({
   apiKey: env.GEMINI_API_KEY,
 });
 
-webPush.setVapidDetails('mailto:support@etarcos-money.app', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
+webPush.setVapidDetails('mailto:support@tacynt-money.app', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
 
 export { cloudinary, google, webPush };

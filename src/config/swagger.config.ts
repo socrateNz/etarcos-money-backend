@@ -6,9 +6,9 @@ export const getApiDocs = async () => {
     definition: {
       openapi: '3.0.0',
       info: {
-        title: 'Etarcos Money AI Backend API',
+        title: 'Tacynt Money AI Backend API',
         version: '1.0.0',
-        description: 'API REST Documentation for Etarcos Money AI',
+        description: 'API REST Documentation for Tacynt Money AI',
       },
       components: {
         securitySchemes: {

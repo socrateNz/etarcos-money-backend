@@ -15,6 +15,7 @@ export interface IUser extends Document {
   country?: string;
   language: string;
   photo?: string;
+  photoPublicId?: string;
   role: UserRole;
   financialScore: number;
   aiPreferences: {
@@ -43,6 +44,7 @@ const UserSchema: Schema = new Schema(
     country: { type: String, trim: true },
     language: { type: String, required: true, default: 'en' },
     photo: { type: String },
+    photoPublicId: { type: String },
     role: { type: String, enum: Object.values(UserRole), default: UserRole.USER },
     financialScore: { type: Number, default: 50 },
     aiPreferences: {

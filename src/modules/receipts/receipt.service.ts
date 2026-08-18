@@ -13,7 +13,7 @@ export class ReceiptService {
   static async uploadReceipt(userId: string, base64Image: string) {
     try {
       const uploadResponse = await cloudinary.uploader.upload(base64Image, {
-        folder: `etarcos-money/receipts/${userId}`,
+        folder: `tacynt-money/receipts/${userId}`,
       });
 
       const receipt = await ReceiptModel.create({

@@ -123,7 +123,7 @@ export class AuthService {
     const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${rawToken}`;
     await sendMail(
       user.email,
-      'Réinitialisation de votre mot de passe Etarcos Money',
+      'Réinitialisation de votre mot de passe Tacynt Money',
       `Bonjour ${user.firstName || ''},\n\nCliquez sur ce lien pour réinitialiser votre mot de passe (valide 1 heure) :\n${resetUrl}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.`
     );
   }

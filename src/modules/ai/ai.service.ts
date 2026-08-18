@@ -16,7 +16,7 @@ export class AiService {
       history = new ChatHistoryModel({ userId, messages: [] });
     }
 
-    const systemPrompt = `Tu es Etarcos Money AI, un assistant financier expert.
+    const systemPrompt = `Tu es Tacynt Money AI, un assistant financier expert.
 L'utilisateur s'appelle ${user?.firstName || 'Utilisateur'}.
 Ton ton de communication préféré par l'utilisateur est : ${user?.aiPreferences?.tone || 'friendly'}.
 Voici le contexte financier de l'utilisateur :

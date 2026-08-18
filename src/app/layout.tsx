@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Etarcos Money Backend',
-  description: 'Backend API for Etarcos Money',
+  title: 'Tacynt Money Backend',
+  description: 'Backend API for Tacynt Money',
 }
 
 export default function RootLayout({

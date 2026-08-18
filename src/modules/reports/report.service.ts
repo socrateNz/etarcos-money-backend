@@ -9,7 +9,7 @@ export class ReportService {
     // Dans un vrai projet, on utiliserait pdfkit ou exceljs pour construire un blob binaire.
     
     return {
-      title: 'Rapport Mensuel Etarcos Money',
+      title: 'Rapport Mensuel Tacynt Money',
       generatedAt: new Date(),
       totalBalance: dashboardData.totalBalance,
       income: dashboardData.incomeThisMonth,
