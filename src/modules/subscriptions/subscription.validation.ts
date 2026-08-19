@@ -8,7 +8,8 @@ export const createSubscriptionSchema = z.object({
   frequency: z.nativeEnum(SubscriptionFrequency).optional(),
   nextBillingDate: z.string().or(z.date()).transform((val) => new Date(val)),
   autoDetected: z.boolean().optional(),
-  category: z.string().optional(),
+  accountId: z.string().min(1, 'Account is required'),
+  categoryId: z.string().optional(),
 });
 
 export const updateSubscriptionSchema = createSubscriptionSchema.partial();

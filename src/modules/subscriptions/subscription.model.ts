@@ -14,7 +14,8 @@ export interface ISubscription extends Document {
   frequency: SubscriptionFrequency;
   nextBillingDate: Date;
   autoDetected: boolean;
-  category?: string;
+  accountId: mongoose.Types.ObjectId;
+  categoryId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,7 +29,8 @@ const SubscriptionSchema: Schema = new Schema(
     frequency: { type: String, enum: Object.values(SubscriptionFrequency), default: SubscriptionFrequency.MONTHLY },
     nextBillingDate: { type: Date, required: true },
     autoDetected: { type: Boolean, default: false },
-    category: { type: String },
+    accountId: { type: Schema.Types.ObjectId, ref: 'Account', required: true },
+    categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
   },
   {
     timestamps: true,
