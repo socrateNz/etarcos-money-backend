@@ -21,3 +21,9 @@ export const verifyOtpSchema = z.object({
 export const resendOtpSchema = z.object({
   email: z.string().email('Format email invalide'),
 });
+
+export const changePendingEmailSchema = z.object({
+  currentEmail: z.string().email('Format email invalide'),
+  password: z.string().min(1, 'Le mot de passe est requis'),
+  newEmail: z.string().email('Format email invalide'),
+});

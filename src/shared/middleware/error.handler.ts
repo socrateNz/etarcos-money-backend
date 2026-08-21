@@ -42,6 +42,10 @@ export const withErrorHandler = (handler: Function) => {
         return errorResponse(error.message, null, 400);
       }
 
+      if (error.message === 'ALREADY_VERIFIED') {
+        return errorResponse('Ce compte est déjà vérifié, connectez-vous normalement.', null, 400);
+      }
+
       if (typeof error.message === 'string' && error.message.endsWith('not found')) {
         return errorResponse('Not Found', error.message, 404);
       }

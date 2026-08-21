@@ -114,6 +114,41 @@ export class AuthService {
     await this.sendOtp(user);
   }
 
+  /**
+   * Lets someone stuck at the OTP screen (e.g. they mistyped/used a fake
+   * email at registration) correct it before they've ever verified. Requires
+   * the password since there's no session yet — that's what proves they own
+   * this specific pending signup rather than someone else's.
+   */
+  static async changePendingEmail(currentEmail: string, password: string, newEmail: string) {
+    const user = await UserModel.findOne({ email: currentEmail });
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      throw new Error('Invalid credentials');
+    }
+
+    if (user.isEmailVerified !== false) {
+      throw new Error('ALREADY_VERIFIED');
+    }
+
+    if (newEmail !== currentEmail) {
+      const existing = await UserModel.findOne({ email: newEmail });
+      if (existing) {
+        throw new Error('Email already exists');
+      }
+    }
+
+    user.email = newEmail;
+    await user.save();
+    await this.sendOtp(user);
+
+    return { email: user.email };
+  }
+
   static async verifyOtp(email: string, otp: string) {
     const user = await UserModel.findOne({ email });
     if (!user) {
