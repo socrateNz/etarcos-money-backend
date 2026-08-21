@@ -3,6 +3,7 @@ import { google } from '@/config/third-party.config';
 import { ChatHistoryModel } from './chat-history.model';
 import { DashboardService } from '../dashboard/dashboard.service';
 import { UserModel } from '../users/user.model';
+import { formatXaf } from '@/shared/utils/currency.util';
 
 export class AiService {
   static async chat(userId: string, message: string) {
@@ -16,14 +17,21 @@ export class AiService {
       history = new ChatHistoryModel({ userId, messages: [] });
     }
 
+    const expensesByCategoryText = dashboardData.expensesByCategory
+      .map((c: any) => `${c.name}: ${formatXaf(c.total)}`)
+      .join(', ') || 'aucune';
+
     const systemPrompt = `Tu es Tacynt Money AI, un assistant financier expert.
 L'utilisateur s'appelle ${user?.firstName || 'Utilisateur'}.
 Ton ton de communication préféré par l'utilisateur est : ${user?.aiPreferences?.tone || 'friendly'}.
+
+IMPORTANT : toutes les sommes de cette application sont en Franc CFA d'Afrique Centrale (XAF). Exprime TOUJOURS les montants en FCFA (jamais en €, $, ou toute autre devise), avec le format "10 000 FCFA".
+
 Voici le contexte financier de l'utilisateur :
-- Solde total : ${dashboardData.totalBalance}
-- Revenus ce mois : ${dashboardData.incomeThisMonth}
-- Dépenses ce mois : ${dashboardData.expenseThisMonth}
-- Dépenses par catégorie : ${JSON.stringify(dashboardData.expensesByCategory)}
+- Solde total : ${formatXaf(dashboardData.totalBalance)}
+- Revenus ce mois : ${formatXaf(dashboardData.incomeThisMonth)}
+- Dépenses ce mois : ${formatXaf(dashboardData.expenseThisMonth)}
+- Dépenses par catégorie : ${expensesByCategoryText}
 
 Réponds toujours de manière claire, concise, et apporte des conseils financiers avisés.`;
 

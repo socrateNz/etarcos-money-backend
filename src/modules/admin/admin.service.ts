@@ -3,6 +3,8 @@ import { AccountModel } from '../accounts/account.model';
 import { TransactionModel } from '../transactions/transaction.model';
 import { ChatHistoryModel } from '../ai/chat-history.model';
 import { SubscriptionModel } from '../subscriptions/subscription.model';
+import { BroadcastModel } from './broadcast.model';
+import { sendMail } from '@/shared/utils/mailer.util';
 
 export class AdminService {
   static async getStats() {
@@ -77,6 +79,42 @@ export class AdminService {
 
     return {
       data: users,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  static async sendTestBroadcast(adminEmail: string, subject: string, body: string) {
+    await sendMail(adminEmail, subject, body);
+  }
+
+  static async sendBroadcast(adminId: string, subject: string, body: string) {
+    const users = await UserModel.find().select('email');
+
+    const results = await Promise.allSettled(users.map((u) => sendMail(u.email, subject, body)));
+    const successCount = results.filter((r) => r.status === 'fulfilled').length;
+    const failureCount = results.length - successCount;
+
+    const broadcast = await BroadcastModel.create({
+      subject,
+      body,
+      sentBy: adminId,
+      recipientCount: users.length,
+      successCount,
+      failureCount,
+    });
+
+    return broadcast;
+  }
+
+  static async getBroadcasts({ page, limit }: { page: number; limit: number }) {
+    const total = await BroadcastModel.countDocuments();
+    const data = await BroadcastModel.find()
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    return {
+      data,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

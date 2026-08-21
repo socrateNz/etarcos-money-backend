@@ -13,6 +13,12 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().min(1, 'VAPID Public Key is required'),
   VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID Private Key is required'),
   GEMINI_API_KEY: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);

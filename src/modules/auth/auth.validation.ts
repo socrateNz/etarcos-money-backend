@@ -12,3 +12,12 @@ export const loginSchema = z.object({
   email: z.string().email('Format email invalide'),
   password: z.string().min(1, 'Le mot de passe est requis'),
 });
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email('Format email invalide'),
+  otp: z.string().length(6, 'Le code doit contenir 6 chiffres'),
+});
+
+export const resendOtpSchema = z.object({
+  email: z.string().email('Format email invalide'),
+});

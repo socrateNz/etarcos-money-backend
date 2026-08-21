@@ -1,15 +1,43 @@
+import nodemailer, { type Transporter } from 'nodemailer';
+import { env } from '@/config/env.config';
+
+let transporter: Transporter | null | undefined;
+
 /**
- * Minimal mail sender. No SMTP/email provider credentials exist in this
- * project yet, so by default this just logs the message to the server
- * console (visible in `npm run dev` output) — enough to test flows like
- * password reset locally today. Once real credentials are available
- * (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS), wire an actual transport
- * here; every caller of `sendMail` stays unchanged.
+ * Lazily builds (and caches) the SMTP transport from env vars. Returns null
+ * when SMTP isn't configured, so callers can fall back to console logging —
+ * keeps local dev working without requiring real mail credentials.
  */
-export async function sendMail(to: string, subject: string, body: string) {
-  if (process.env.SMTP_HOST) {
-    console.warn('SMTP_HOST is set but no SMTP transport is wired up yet — falling back to console logging.');
+function getTransporter(): Transporter | null {
+  if (transporter !== undefined) return transporter;
+
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASSWORD) {
+    transporter = null;
+    return transporter;
   }
 
-  console.log(`\n📧 [DEV MAIL] To: ${to}\nSubject: ${subject}\n${body}\n`);
+  transporter = nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT ? Number(env.SMTP_PORT) : 587,
+    secure: env.SMTP_SECURE === 'true',
+    auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
+  });
+
+  return transporter;
+}
+
+export async function sendMail(to: string, subject: string, body: string) {
+  const transport = getTransporter();
+
+  if (!transport) {
+    console.log(`\n📧 [DEV MAIL] To: ${to}\nSubject: ${subject}\n${body}\n`);
+    return;
+  }
+
+  await transport.sendMail({
+    from: `"Tacynt Money" <${env.SMTP_USER}>`,
+    to,
+    subject,
+    text: body,
+  });
 }

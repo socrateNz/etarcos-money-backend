@@ -4,6 +4,7 @@ import { UserModel } from '../users/user.model';
 import { google } from '@/config/third-party.config';
 import { generateText } from 'ai';
 import mongoose from 'mongoose';
+import { formatXaf } from '@/shared/utils/currency.util';
 
 const CHART_DAYS = 14;
 const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
@@ -70,8 +71,10 @@ export class DashboardService {
     try {
       const { text } = await generateText({
         model: google('gemini-3.5-flash'),
-        system: 'Tu es un conseiller financier. Donne UN SEUL conseil court (1-2 phrases max), concret et actionnable, en français, sans salutation ni formule de politesse.',
-        prompt: `Solde total: ${context.totalBalance}. Revenus ce mois: ${context.incomeThisMonth}. Dépenses ce mois: ${context.expenseThisMonth}. Flux net: ${context.netCashFlow}.`,
+        system:
+          'Tu es un conseiller financier. Donne UN SEUL conseil court (1-2 phrases max), concret et actionnable, en français, sans salutation ni formule de politesse. ' +
+          'Toutes les sommes sont en Franc CFA d\'Afrique Centrale (XAF) : exprime toujours les montants en FCFA (jamais en €, $, ou une autre devise), au format "10 000 FCFA".',
+        prompt: `Solde total: ${formatXaf(context.totalBalance)}. Revenus ce mois: ${formatXaf(context.incomeThisMonth)}. Dépenses ce mois: ${formatXaf(context.expenseThisMonth)}. Flux net: ${formatXaf(context.netCashFlow)}.`,
       });
 
       user.lastAiAdviceText = text;

@@ -1,9 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { UserModel } from '../users/user.model';
+import { UserModel, type IUser } from '../users/user.model';
 import { RefreshTokenModel } from './refresh-token.model';
 import { PasswordResetTokenModel } from './password-reset-token.model';
+import { EmailOtpModel } from './email-otp.model';
 import { CategoryModel, CategoryType } from '../categories/category.model';
 import { env } from '@/config/env.config';
 import { sendMail } from '@/shared/utils/mailer.util';
@@ -11,7 +12,10 @@ import { z } from 'zod';
 import { registerSchema, loginSchema } from './auth.validation';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const OTP_MAX_ATTEMPTS = 5;
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const DEFAULT_CATEGORIES: { name: string; type: CategoryType; icon: string; color: string }[] = [
   { name: 'Alimentation', type: CategoryType.EXPENSE, icon: 'Coffee', color: '#f97316' },
@@ -39,17 +43,21 @@ export class AuthService {
       firstName: data.firstName,
       lastName: data.lastName,
       currency: data.currency || 'XAF',
+      isEmailVerified: false,
     });
 
     await CategoryModel.insertMany(
       DEFAULT_CATEGORIES.map((cat) => ({ ...cat, userId: user._id }))
     );
 
+    await this.sendOtp(user);
+
     return {
       id: user._id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      requiresVerification: true,
     };
   }
 
@@ -63,6 +71,79 @@ export class AuthService {
     if (!isMatch) {
       throw new Error('Invalid credentials');
     }
+
+    // Accounts created before OTP verification existed have no
+    // isEmailVerified field at all (undefined) — only a strict `false` (set
+    // on new registrations) blocks login here.
+    if (user.isEmailVerified === false) {
+      await this.sendOtp(user);
+      throw new Error('EMAIL_NOT_VERIFIED');
+    }
+
+    return this.generateTokens(user._id.toString(), user.role);
+  }
+
+  /** Generates, stores (hashed), and emails a fresh 6-digit OTP for a user. */
+  static async sendOtp(user: IUser) {
+    const otp = generateOtp();
+    await EmailOtpModel.create({
+      userId: user._id,
+      otpHash: hashToken(otp),
+      expiresAt: new Date(Date.now() + OTP_TTL_MS),
+    });
+
+    try {
+      await sendMail(
+        user.email,
+        'Votre code de vérification Tacynt Money',
+        `Bonjour ${user.firstName || ''},\n\nVotre code de vérification est : ${otp}\n\nCe code expire dans 10 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.`
+      );
+    } catch (error) {
+      // Don't fail registration/login over a transient mail-provider hiccup —
+      // the code is saved, "resend code" is the recovery path.
+      console.error('Failed to send OTP email:', error);
+    }
+  }
+
+  static async resendOtp(email: string) {
+    const user = await UserModel.findOne({ email });
+    // Same "resolve silently" reasoning as password reset: don't let this
+    // endpoint confirm whether an email is registered.
+    if (!user || user.isEmailVerified !== false) return;
+
+    await this.sendOtp(user);
+  }
+
+  static async verifyOtp(email: string, otp: string) {
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      throw new Error('Invalid or expired code');
+    }
+
+    // Already verified (e.g. they resubmit after a slow network response):
+    // just log them in instead of erroring.
+    if (user.isEmailVerified !== false) {
+      return this.generateTokens(user._id.toString(), user.role);
+    }
+
+    const record = await EmailOtpModel.findOne({ userId: user._id, used: false }).sort({ createdAt: -1 });
+    if (!record || record.expiresAt < new Date()) {
+      throw new Error('Invalid or expired code');
+    }
+    if (record.attempts >= OTP_MAX_ATTEMPTS) {
+      throw new Error('Too many attempts. Request a new code.');
+    }
+
+    if (record.otpHash !== hashToken(otp)) {
+      record.attempts += 1;
+      await record.save();
+      throw new Error('Invalid or expired code');
+    }
+
+    record.used = true;
+    await record.save();
+    user.isEmailVerified = true;
+    await user.save();
 
     return this.generateTokens(user._id.toString(), user.role);
   }
@@ -121,11 +202,19 @@ export class AuthService {
     });
 
     const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${rawToken}`;
-    await sendMail(
-      user.email,
-      'Réinitialisation de votre mot de passe Tacynt Money',
-      `Bonjour ${user.firstName || ''},\n\nCliquez sur ce lien pour réinitialiser votre mot de passe (valide 1 heure) :\n${resetUrl}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.`
-    );
+    try {
+      await sendMail(
+        user.email,
+        'Réinitialisation de votre mot de passe Tacynt Money',
+        `Bonjour ${user.firstName || ''},\n\nCliquez sur ce lien pour réinitialiser votre mot de passe (valide 1 heure) :\n${resetUrl}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.`
+      );
+    } catch (error) {
+      // Don't let a transient mail-provider hiccup turn into a 500 for the
+      // user, and don't leak whether the send failed — same "always resolve
+      // silently" reasoning as the "user not found" branch above. The token
+      // is already saved, so a retry (or the console/SMTP logs) can recover.
+      console.error('Failed to send password reset email:', error);
+    }
   }
 
   static async resetPassword(rawToken: string, newPassword: string) {

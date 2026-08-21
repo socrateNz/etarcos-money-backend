@@ -30,6 +30,18 @@ export const withErrorHandler = (handler: Function) => {
         return errorResponse('Conflict', error.message, 409);
       }
 
+      if (error.message === 'EMAIL_NOT_VERIFIED') {
+        return errorResponse(
+          "Veuillez vérifier votre adresse email. Un nouveau code vient d'être envoyé.",
+          { code: 'EMAIL_NOT_VERIFIED' },
+          403
+        );
+      }
+
+      if (error.message === 'Invalid or expired code' || (typeof error.message === 'string' && error.message.startsWith('Too many attempts'))) {
+        return errorResponse(error.message, null, 400);
+      }
+
       if (typeof error.message === 'string' && error.message.endsWith('not found')) {
         return errorResponse('Not Found', error.message, 404);
       }

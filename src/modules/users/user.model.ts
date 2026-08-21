@@ -16,6 +16,9 @@ export interface IUser extends Document {
   language: string;
   photo?: string;
   photoPublicId?: string;
+  // Absent (undefined) on accounts created before OTP verification existed —
+  // always treat those as verified. Only a strict `false` blocks login.
+  isEmailVerified?: boolean;
   role: UserRole;
   financialScore: number;
   aiPreferences: {
@@ -29,6 +32,7 @@ export interface IUser extends Document {
   pushSubscription?: any; // To store Web Push subscription object
   lastAiAdviceText?: string;
   lastAiAdviceDate?: Date;
+  lastAiAdviceNotifiedDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +49,7 @@ const UserSchema: Schema = new Schema(
     language: { type: String, required: true, default: 'en' },
     photo: { type: String },
     photoPublicId: { type: String },
+    isEmailVerified: { type: Boolean, default: false },
     role: { type: String, enum: Object.values(UserRole), default: UserRole.USER },
     financialScore: { type: Number, default: 50 },
     aiPreferences: {
@@ -58,6 +63,7 @@ const UserSchema: Schema = new Schema(
     pushSubscription: { type: Schema.Types.Mixed },
     lastAiAdviceText: { type: String },
     lastAiAdviceDate: { type: Date },
+    lastAiAdviceNotifiedDate: { type: Date },
   },
   {
     timestamps: true,
