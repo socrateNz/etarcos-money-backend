@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // pdfkit reads its font metrics (.afm files) from disk relative to its own
+  // __dirname at runtime. Bundling it rewrites that path and breaks the lookup
+  // (ENOENT on Helvetica.afm), so keep it as a plain externally-required package.
+  serverExternalPackages: ["pdfkit"],
   async headers() {
     return [
       {

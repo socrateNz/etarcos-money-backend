@@ -5,11 +5,17 @@ const MUTED = '#6b7280';
 const INCOME_COLOR = '#059669';
 const BORDER = '#e5e7eb';
 
+// pdfkit's built-in Helvetica only supports WinAnsi encoding, which has no glyph
+// for the narrow no-break space (U+202F) or non-break space (U+00A0) that
+// Intl's fr-FR grouping uses — they render as garbage (e.g. a stray "/"). Swap
+// them for a plain space, which WinAnsi does support.
+const sanitizeForPdf = (text: string) => text.replace(/[  ]/g, ' ');
+
 const formatAmount = (amount: number, currency: string) => {
   try {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
+    return sanitizeForPdf(new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount));
   } catch {
-    return `${amount.toLocaleString('fr-FR')} ${currency}`;
+    return `${sanitizeForPdf(amount.toLocaleString('fr-FR'))} ${currency}`;
   }
 };
 
@@ -35,7 +41,11 @@ interface StatementPdfParams {
 }
 
 const COL = { date: 40, desc: 110, category: 290, account: 400, amount: 470 };
-const PAGE_BOTTOM = 770;
+// A4 height is ~842pt; with a 40pt bottom margin the printable area ends around
+// y=802. Rows must stop well before that, and the footer must sit inside it too,
+// or pdfkit silently starts a spurious extra page just to fit the footer text.
+const PAGE_BOTTOM = 740;
+const FOOTER_Y = 785;
 
 export function generateStatementPdf({ user, startDate, endDate, transactions, defaultCurrency }: StatementPdfParams): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -130,7 +140,7 @@ export function generateStatementPdf({ user, startDate, endDate, transactions, d
       doc
         .fillColor(MUTED)
         .fontSize(8)
-        .text(`Tacynt Money — Page ${i + 1} sur ${range.count}`, 40, 810, { width: 515, align: 'center' });
+        .text(`Tacynt Money — Page ${i + 1} sur ${range.count}`, 40, FOOTER_Y, { width: 515, align: 'center', lineBreak: false });
     }
 
     doc.end();
