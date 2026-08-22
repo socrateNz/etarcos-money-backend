@@ -1,19 +1,30 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { AuthService } from '@/modules/auth/auth.service';
 import { withErrorHandler } from '@/shared/middleware/error.handler';
 import { successResponse, errorResponse } from '@/shared/utils/response.util';
 import { connectDB } from '@/shared/database/mongoose';
-import { env } from '@/config/env.config';
+import { z } from 'zod';
+
+const refreshSchema = z.object({
+  refreshToken: z.string().min(1, 'refreshToken is required'),
+});
 
 /**
  * @swagger
  * /api/auth/refresh:
  *   post:
  *     summary: Refresh access token
- *     description: Uses refresh token cookie to get a new access token
+ *     description: Exchanges a still-valid refresh token for a new access/refresh token pair (rotation).
  *     tags:
  *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Token refreshed successfully
@@ -22,24 +33,16 @@ import { env } from '@/config/env.config';
  */
 const refreshHandler = async (req: Request) => {
   await connectDB();
-  const cookieStore = await cookies();
-  const refreshToken = cookieStore.get('refresh_token')?.value;
+  const body = await req.json().catch(() => ({}));
+  const parsed = refreshSchema.safeParse(body);
 
-  if (!refreshToken) {
+  if (!parsed.success) {
     return errorResponse('No refresh token provided', null, 401);
   }
 
-  const { accessToken, refreshToken: newRefreshToken } = await AuthService.refresh(refreshToken);
+  const { accessToken, refreshToken } = await AuthService.refresh(parsed.data.refreshToken);
 
-  cookieStore.set('refresh_token', newRefreshToken, {
-    httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: '/api/auth',
-  });
-
-  return successResponse({ accessToken }, 'Token refreshed successfully');
+  return successResponse({ accessToken, refreshToken }, 'Token refreshed successfully');
 };
 
 export const POST = withErrorHandler(refreshHandler);

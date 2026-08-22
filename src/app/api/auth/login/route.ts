@@ -1,11 +1,8 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { AuthService } from '@/modules/auth/auth.service';
 import { loginSchema } from '@/modules/auth/auth.validation';
 import { withErrorHandler } from '@/shared/middleware/error.handler';
 import { successResponse } from '@/shared/utils/response.util';
 import { connectDB } from '@/shared/database/mongoose';
-import { env } from '@/config/env.config';
 
 /**
  * @swagger
@@ -48,6 +45,8 @@ import { env } from '@/config/env.config';
  *                   properties:
  *                     accessToken:
  *                       type: string
+ *                     refreshToken:
+ *                       type: string
  *                 message:
  *                   type: string
  *                   example: Logged in successfully
@@ -63,17 +62,7 @@ const loginHandler = async (req: Request) => {
 
   const { accessToken, refreshToken } = await AuthService.login(validatedData);
 
-  // Use await with cookies() in Next.js 15
-  const cookieStore = await cookies();
-  cookieStore.set('refresh_token', refreshToken, {
-    httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: '/api/auth',
-  });
-
-  return successResponse({ accessToken }, 'Logged in successfully');
+  return successResponse({ accessToken, refreshToken }, 'Logged in successfully');
 };
 
 export const POST = withErrorHandler(loginHandler);

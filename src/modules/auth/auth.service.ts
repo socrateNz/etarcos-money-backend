@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { registerSchema, loginSchema } from './auth.validation';
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const REFRESH_TOKEN_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const OTP_MAX_ATTEMPTS = 5;
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
@@ -184,13 +185,20 @@ export class AuthService {
   }
 
   static async generateTokens(userId: string, role: string) {
+    // The access token only needs to outlive the gap between silent
+    // refreshes (see the frontend axios interceptor) — it's never what
+    // actually signs someone out. The refresh token is what makes a session
+    // "stay logged in until you log out": it's rotated (and its expiry reset
+    // to a fresh 48h) on every use, so anyone who opens the app at least
+    // once every 2 days never sees a login screen, while a device that's
+    // genuinely abandoned for 48h+ still expires instead of staying valid
+    // (and unrevocable) forever.
     const accessToken = jwt.sign({ userId, role }, env.JWT_ACCESS_SECRET, {
-      expiresIn: '15m',
+      expiresIn: '1d',
     });
 
     const refreshToken = crypto.randomBytes(40).toString('hex');
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 
     await RefreshTokenModel.create({
       userId,

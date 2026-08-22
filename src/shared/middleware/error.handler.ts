@@ -22,7 +22,15 @@ export const withErrorHandler = (handler: Function) => {
         return errorResponse('Duplicate Key Error', error.keyValue, 409);
       }
 
-      if (error.message === 'Invalid credentials' || error.message === 'User not found' || error.message === 'Invalid or expired refresh token' || error.message === 'Invalid or expired reset token') {
+      if (error.message === 'Invalid credentials') {
+        return errorResponse('Email ou mot de passe incorrect.', error.message, 401);
+      }
+
+      if (error.message === 'Invalid or expired reset token') {
+        return errorResponse('Ce lien est invalide ou a expiré.', error.message, 401);
+      }
+
+      if (error.message === 'User not found' || error.message === 'Invalid or expired refresh token') {
         return errorResponse('Unauthorized', error.message, 401);
       }
 
