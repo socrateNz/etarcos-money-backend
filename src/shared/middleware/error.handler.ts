@@ -46,6 +46,10 @@ export const withErrorHandler = (handler: Function) => {
         return errorResponse('Ce compte est déjà vérifié, connectez-vous normalement.', null, 400);
       }
 
+      if (error.message === 'CANNOT_DELETE_SELF') {
+        return errorResponse('Vous ne pouvez pas supprimer votre propre compte depuis ce panneau.', null, 400);
+      }
+
       if (typeof error.message === 'string' && error.message.endsWith('not found')) {
         return errorResponse('Not Found', error.message, 404);
       }

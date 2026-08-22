@@ -3,8 +3,18 @@ import { AccountModel } from '../accounts/account.model';
 import { TransactionModel } from '../transactions/transaction.model';
 import { ChatHistoryModel } from '../ai/chat-history.model';
 import { SubscriptionModel } from '../subscriptions/subscription.model';
+import { BudgetModel } from '../budgets/budget.model';
+import { GoalModel } from '../goals/goal.model';
+import { CategoryModel } from '../categories/category.model';
+import { NotificationModel } from '../notifications/notification.model';
+import { ReceiptModel } from '../receipts/receipt.model';
+import { FinancialHealthModel } from '../financial-health/financial-health.model';
+import { RefreshTokenModel } from '../auth/refresh-token.model';
+import { PasswordResetTokenModel } from '../auth/password-reset-token.model';
+import { EmailOtpModel } from '../auth/email-otp.model';
 import { BroadcastModel } from './broadcast.model';
 import { sendMail } from '@/shared/utils/mailer.util';
+import { cloudinary } from '@/config/third-party.config';
 
 export class AdminService {
   static async getStats() {
@@ -117,5 +127,45 @@ export class AdminService {
       data,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  /** Permanently deletes a user and every record tied to their userId. */
+  static async deleteUser(targetUserId: string, adminId: string) {
+    if (targetUserId === adminId) {
+      throw new Error('CANNOT_DELETE_SELF');
+    }
+
+    const user = await UserModel.findById(targetUserId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (user.photoPublicId) {
+      try {
+        await cloudinary.uploader.destroy(user.photoPublicId);
+      } catch (error) {
+        console.error('Failed to delete profile photo from Cloudinary:', error);
+      }
+    }
+
+    await Promise.all([
+      AccountModel.deleteMany({ userId: targetUserId }),
+      TransactionModel.deleteMany({ userId: targetUserId }),
+      BudgetModel.deleteMany({ userId: targetUserId }),
+      GoalModel.deleteMany({ userId: targetUserId }),
+      CategoryModel.deleteMany({ userId: targetUserId }),
+      SubscriptionModel.deleteMany({ userId: targetUserId }),
+      NotificationModel.deleteMany({ userId: targetUserId }),
+      ChatHistoryModel.deleteMany({ userId: targetUserId }),
+      ReceiptModel.deleteMany({ userId: targetUserId }),
+      FinancialHealthModel.deleteMany({ userId: targetUserId }),
+      RefreshTokenModel.deleteMany({ userId: targetUserId }),
+      PasswordResetTokenModel.deleteMany({ userId: targetUserId }),
+      EmailOtpModel.deleteMany({ userId: targetUserId }),
+    ]);
+
+    await UserModel.findByIdAndDelete(targetUserId);
+
+    return { deletedUserId: targetUserId, email: user.email };
   }
 }
