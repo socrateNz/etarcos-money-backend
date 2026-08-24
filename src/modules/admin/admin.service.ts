@@ -12,9 +12,18 @@ import { FinancialHealthModel } from '../financial-health/financial-health.model
 import { RefreshTokenModel } from '../auth/refresh-token.model';
 import { PasswordResetTokenModel } from '../auth/password-reset-token.model';
 import { EmailOtpModel } from '../auth/email-otp.model';
-import { BroadcastModel } from './broadcast.model';
+import { BroadcastModel, type BroadcastAudience } from './broadcast.model';
 import { sendMail } from '@/shared/utils/mailer.util';
 import { cloudinary } from '@/config/third-party.config';
+
+// Accounts created before OTP verification existed have no isEmailVerified
+// field at all — same "undefined counts as verified" rule used everywhere
+// else (login gate, admin users table).
+const audienceFilter = (audience: BroadcastAudience) => {
+  if (audience === 'verified') return { isEmailVerified: { $ne: false } };
+  if (audience === 'unverified') return { isEmailVerified: false };
+  return {};
+};
 
 export class AdminService {
   static async getStats() {
@@ -28,6 +37,7 @@ export class AdminService {
       totalUsers,
       newUsers7d,
       newUsers30d,
+      unverifiedUsers,
       totalAccounts,
       totalTransactions,
       totalSubscriptions,
@@ -38,6 +48,7 @@ export class AdminService {
       UserModel.countDocuments(),
       UserModel.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
       UserModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      UserModel.countDocuments({ isEmailVerified: false }),
       AccountModel.countDocuments(),
       TransactionModel.countDocuments(),
       SubscriptionModel.countDocuments(),
@@ -61,6 +72,8 @@ export class AdminService {
       totalUsers,
       newUsers7d,
       newUsers30d,
+      verifiedUsers: totalUsers - unverifiedUsers,
+      unverifiedUsers,
       totalAccounts,
       totalTransactions,
       totalSubscriptions,
@@ -97,8 +110,8 @@ export class AdminService {
     await sendMail(adminEmail, subject, body);
   }
 
-  static async sendBroadcast(adminId: string, subject: string, body: string) {
-    const users = await UserModel.find().select('email');
+  static async sendBroadcast(adminId: string, subject: string, body: string, audience: BroadcastAudience = 'all') {
+    const users = await UserModel.find(audienceFilter(audience)).select('email');
 
     const results = await Promise.allSettled(users.map((u) => sendMail(u.email, subject, body)));
     const successCount = results.filter((r) => r.status === 'fulfilled').length;
@@ -108,6 +121,7 @@ export class AdminService {
       subject,
       body,
       sentBy: adminId,
+      audience,
       recipientCount: users.length,
       successCount,
       failureCount,

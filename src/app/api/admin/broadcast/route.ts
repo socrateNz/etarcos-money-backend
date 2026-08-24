@@ -44,6 +44,9 @@ import { broadcastSchema } from '@/modules/admin/admin.validation';
  *                 type: string
  *               body:
  *                 type: string
+ *               audience:
+ *                 type: string
+ *                 enum: [all, verified, unverified]
  *     responses:
  *       201:
  *         description: Broadcast sent, with recipient/success/failure counts
@@ -78,9 +81,9 @@ const sendBroadcastHandler = async (req: Request) => {
 
   const adminId = authResult.headers.get('x-user-id')!;
   const body = await req.json();
-  const { subject, body: content } = broadcastSchema.parse(body);
+  const { subject, body: content, audience } = broadcastSchema.parse(body);
 
-  const broadcast = await AdminService.sendBroadcast(adminId, subject, content);
+  const broadcast = await AdminService.sendBroadcast(adminId, subject, content, audience);
   return successResponse(broadcast, 'Broadcast sent', 201);
 };
 
