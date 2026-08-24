@@ -73,10 +73,10 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    // Accounts created before OTP verification existed have no
-    // isEmailVerified field at all (undefined) — only a strict `false` (set
-    // on new registrations) blocks login here.
-    if (user.isEmailVerified === false) {
+    // Only a strict `true` counts as verified — accounts registered without
+    // ever completing OTP verification (including pre-OTP-deploy signups
+    // that have no isEmailVerified field at all) must still verify here.
+    if (user.isEmailVerified !== true) {
       await this.sendOtp(user);
       throw new Error('EMAIL_NOT_VERIFIED');
     }
@@ -110,7 +110,7 @@ export class AuthService {
     const user = await UserModel.findOne({ email });
     // Same "resolve silently" reasoning as password reset: don't let this
     // endpoint confirm whether an email is registered.
-    if (!user || user.isEmailVerified !== false) return;
+    if (!user || user.isEmailVerified === true) return;
 
     await this.sendOtp(user);
   }
@@ -132,7 +132,7 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    if (user.isEmailVerified !== false) {
+    if (user.isEmailVerified === true) {
       throw new Error('ALREADY_VERIFIED');
     }
 
@@ -158,7 +158,7 @@ export class AuthService {
 
     // Already verified (e.g. they resubmit after a slow network response):
     // just log them in instead of erroring.
-    if (user.isEmailVerified !== false) {
+    if (user.isEmailVerified === true) {
       return this.generateTokens(user._id.toString(), user.role);
     }
 

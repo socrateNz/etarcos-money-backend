@@ -16,8 +16,8 @@ export interface IUser extends Document {
   language: string;
   photo?: string;
   photoPublicId?: string;
-  // Absent (undefined) on accounts created before OTP verification existed —
-  // always treat those as verified. Only a strict `false` blocks login.
+  // Only a strict `true` counts as verified everywhere (login gate, admin
+  // stats/broadcast audience). Missing/false both block/count as unverified.
   isEmailVerified?: boolean;
   role: UserRole;
   financialScore: number;

@@ -16,12 +16,12 @@ import { BroadcastModel, type BroadcastAudience } from './broadcast.model';
 import { sendMail } from '@/shared/utils/mailer.util';
 import { cloudinary } from '@/config/third-party.config';
 
-// Accounts created before OTP verification existed have no isEmailVerified
-// field at all — same "undefined counts as verified" rule used everywhere
-// else (login gate, admin users table).
+// Only a strict `true` counts as verified — same rule as the login gate.
+// Missing isEmailVerified (pre-OTP-deploy signups that never completed
+// verification) counts as unverified, not verified.
 const audienceFilter = (audience: BroadcastAudience) => {
-  if (audience === 'verified') return { isEmailVerified: { $ne: false } };
-  if (audience === 'unverified') return { isEmailVerified: false };
+  if (audience === 'verified') return { isEmailVerified: true };
+  if (audience === 'unverified') return { isEmailVerified: { $ne: true } };
   return {};
 };
 
@@ -48,7 +48,7 @@ export class AdminService {
       UserModel.countDocuments(),
       UserModel.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
       UserModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
-      UserModel.countDocuments({ isEmailVerified: false }),
+      UserModel.countDocuments({ isEmailVerified: { $ne: true } }),
       AccountModel.countDocuments(),
       TransactionModel.countDocuments(),
       SubscriptionModel.countDocuments(),
