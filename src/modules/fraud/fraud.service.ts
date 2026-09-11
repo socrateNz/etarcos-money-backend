@@ -1,4 +1,7 @@
 import { TransactionModel } from '../transactions/transaction.model';
+// Registers the 'Category' schema for .populate('categoryId') below — see
+// transaction.service.ts for why this otherwise-unused import is required.
+import '../categories/category.model';
 import mongoose from 'mongoose';
 
 export class FraudService {

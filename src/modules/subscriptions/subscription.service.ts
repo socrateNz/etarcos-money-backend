@@ -1,6 +1,10 @@
 import { SubscriptionModel, SubscriptionFrequency } from './subscription.model';
 import { TransactionService } from '../transactions/transaction.service';
 import { TransactionType } from '../transactions/transaction.model';
+// Register the 'Account'/'Category' schemas for .populate() below — see
+// transaction.service.ts for why these otherwise-unused imports are required.
+import '../accounts/account.model';
+import '../categories/category.model';
 import { z } from 'zod';
 import { createSubscriptionSchema, updateSubscriptionSchema } from './subscription.validation';
 

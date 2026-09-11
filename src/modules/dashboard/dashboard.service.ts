@@ -1,6 +1,9 @@
 import { AccountModel } from '../accounts/account.model';
 import { TransactionModel } from '../transactions/transaction.model';
 import { UserModel } from '../users/user.model';
+// Registers the 'Category' schema for .populate('categoryId') below — see
+// transaction.service.ts for why this otherwise-unused import is required.
+import '../categories/category.model';
 import { google } from '@/config/third-party.config';
 import { generateText } from 'ai';
 import mongoose from 'mongoose';

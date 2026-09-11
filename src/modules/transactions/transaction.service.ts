@@ -1,5 +1,9 @@
 import { TransactionModel } from './transaction.model';
 import { AccountModel } from '../accounts/account.model';
+// Registers the 'Category' schema — never referenced by name below, but
+// required for the .populate('categoryId') calls to resolve on Vercel,
+// where each route bundles into its own isolated serverless function.
+import '../categories/category.model';
 import { z } from 'zod';
 import { createTransactionSchema, updateTransactionSchema, queryTransactionSchema } from './transaction.validation';
 

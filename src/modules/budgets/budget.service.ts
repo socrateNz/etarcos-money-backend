@@ -1,5 +1,8 @@
 import { BudgetModel } from './budget.model';
 import { TransactionModel } from '../transactions/transaction.model';
+// Registers the 'Category' schema for .populate('categoryId') below — see
+// transaction.service.ts for why this otherwise-unused import is required.
+import '../categories/category.model';
 import { z } from 'zod';
 import { createBudgetSchema, updateBudgetSchema } from './budget.validation';
 import mongoose from 'mongoose';
